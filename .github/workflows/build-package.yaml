@@ -65,7 +65,10 @@ jobs:
 
       - name: Pack
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: dotnet pack --configuration Release --no-build /p:PackageVersion=1.0.${{ github.run_number }}
+        # Prerelease ahead of the first public release. Note this sorts BELOW the 1.0.x
+        # versions previously pushed to the org feed, so those need removing or a floating
+        # reference will keep resolving to them.
+        run: dotnet pack --configuration Release --no-build /p:PackageVersion=1.0.0-preview.${{ github.run_number }}
 
       - name: Push
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
