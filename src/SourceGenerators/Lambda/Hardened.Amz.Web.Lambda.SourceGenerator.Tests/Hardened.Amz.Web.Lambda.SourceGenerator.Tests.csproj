@@ -24,14 +24,27 @@
         <PackageReference Include="xunit.v3" Version="3.2.2" />
     </ItemGroup>
 
-    <!--
-      TODO: add <PackageReference Include="Hardened.SourceGeneration.Testing" /> once it is published
-      to the feed, then assert generated output compiles via GeneratorTestHarness. Until then this
-      project can only test the generator's model-building in isolation. See TESTING-PLAN.md 0.1.
-    -->
+    <ItemGroup>
+        <PackageReference Include="NSubstitute" Version="5.1.0" />
+    </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Web\Hardened.Amz.Web.Lambda.SourceGenerator.csproj"/>
+        <!--
+          The in-repo copy of the framework's Hardened.SourceGeneration.Testing. It is what makes
+          GeneratorTestHarness.Run(...).AssertNoErrors() available, which is the assertion that
+          proves the emitted C# compiles rather than merely reads correctly.
+        -->
+        <ProjectReference Include="..\..\Hardened.Amz.SourceGeneration.Testing\Hardened.Amz.SourceGeneration.Testing.csproj"/>
+    </ItemGroup>
+
+    <!--
+      The source under test binds against these, so the harness needs them on disk to build its
+      reference set. ReferenceOutputAssembly is left on: the tests anchor on real types from each.
+    -->
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\Lambda\Web\Hardened.Amz.Web.Lambda.Runtime\Hardened.Amz.Web.Lambda.Runtime.csproj"/>
+        <ProjectReference Include="..\..\..\Lambda\Web\Hardened.Amz.Web.Lambda.Streaming\Hardened.Amz.Web.Lambda.Streaming.csproj"/>
     </ItemGroup>
 
 </Project>
