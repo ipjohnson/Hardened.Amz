@@ -1,9 +1,8 @@
-using Hardened.Shared.Runtime.Attributes;
+using DependencyModules.Runtime.Attributes;
 
 namespace DynamoDbStreamApp.Impl;
 
-[Expose]
-[Singleton]
+[SingletonService]
 public class CountingService {
     public int Count { get; set; }
 }
