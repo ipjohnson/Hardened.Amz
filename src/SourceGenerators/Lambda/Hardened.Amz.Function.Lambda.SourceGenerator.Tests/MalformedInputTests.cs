@@ -215,22 +215,27 @@ public class MalformedInputTests {
     /// decides to do about it, it must not emit something that fails to compile.
     /// </summary>
     /// <remarks>
-    /// Recorded 2026-08-12: <c>EntryPointSelector.TransformModel</c> throws while building the model,
-    /// so nothing is emitted and the consumer gets a <c>CS8785</c> naming the generator rather than
-    /// their missing namespace. Reported rather than asserted; the assertion below holds whether the
-    /// generator learns to emit into the global namespace or continues to decline.
+    /// <para>
+    /// This used to pass for the wrong reason. <c>EntryPointSelector.TransformModel</c> threw while
+    /// building the model, so nothing was emitted and the assertion below held vacuously. The
+    /// framework fixed that crash on 2026-08-12, the generator started emitting, and the emitted
+    /// application referenced a <c>CreateServiceProvider</c> that this source never declared —
+    /// caught in CI rather than locally, because <c>Hardened.SourceGenerator</c> is referenced as a
+    /// floating <c>1.0.0-preview*</c> and CI restored the newer package.
+    /// </para>
+    ///
+    /// <para>
+    /// The source now comes from the harness, which supplies that method the way the framework's
+    /// <c>ServiceProviderFileGenerator</c> does in a real build, so the assertion is about this
+    /// generator's own output rather than about a half-built application. It holds whether the
+    /// generator emits into the global namespace or declines to.
+    /// </para>
     /// </remarks>
     [Fact]
     public void AnEntryPointInTheGlobalNamespaceEmitsNothingThatFailsToCompile() {
         var result = FunctionGeneratorHarness.Run(
             new LambdaFunctionSourceGenerator(),
-            """
-            using Hardened.Shared.Runtime.Attributes;
-
-            [HardenedModule]
-            public partial class Application {
-            }
-            """);
+            FunctionGeneratorHarness.NamedApplication("Application", ns: ""));
 
         Assert.All(result.Errors, error => Assert.All(
             result.GeneratedSources.Keys,

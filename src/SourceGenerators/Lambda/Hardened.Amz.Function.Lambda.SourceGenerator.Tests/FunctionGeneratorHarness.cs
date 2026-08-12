@@ -61,7 +61,7 @@ public static class FunctionGeneratorHarness {
         using Microsoft.Extensions.DependencyInjection;
         using Microsoft.Extensions.Logging;
 
-        namespace {{ns}};
+        {{(string.IsNullOrEmpty(ns) ? "" : "namespace " + ns + ";")}}
 
         [HardenedModule]
         {{attributes}}
