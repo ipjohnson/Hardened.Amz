@@ -25,6 +25,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="NSubstitute" Version="5.1.0" />
+        <!-- MemoryStreamPool / StringBuilderPool and ServiceCollection, used for real rather than mocked. -->
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Hardened.Amz.Web.Lambda.Runtime\Hardened.Amz.Web.Lambda.Runtime.csproj"/>
     </ItemGroup>
 
