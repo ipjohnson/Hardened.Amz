@@ -25,6 +25,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="NSubstitute" Version="5.1.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Hardened.Amz.Function.Lambda.Streaming\Hardened.Amz.Function.Lambda.Streaming.csproj"/>
     </ItemGroup>
 
