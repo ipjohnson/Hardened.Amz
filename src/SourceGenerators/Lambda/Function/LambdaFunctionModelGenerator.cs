@@ -266,17 +266,6 @@ public static class LambdaFunctionModelGenerator {
 
     private static ResponseInformationModel GetResponseInformation(GeneratorSyntaxContext context,
         MethodDeclarationSyntax methodDeclaration) {
-        var templateAttribute =
-            context.Node.DescendantNodes()
-                .OfType<AttributeSyntax>()
-                .FirstOrDefault(a => a.Name.ToString() == "Template" || a.Name.ToString() == "TemplateAttribute");
-
-        var template = "";
-
-        if (templateAttribute is { ArgumentList.Arguments.Count: > 0 }) {
-            template = templateAttribute.ArgumentList.Arguments[0].ToString().Trim('"');
-        }
-
         var returnType = methodDeclaration.ReturnType.GetTypeDefinition(context);
         var isAsync = returnType is GenericTypeDefinition { Name: "Task" or "ValueTask" };
 
@@ -294,7 +283,6 @@ public static class LambdaFunctionModelGenerator {
 
         return new ResponseInformationModel {
             IsAsync = isAsync,
-            TemplateName = template,
             ReturnType = returnType,
             RawResponseContentType = rawResponseString
         };

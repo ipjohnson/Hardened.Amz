@@ -21,7 +21,6 @@ public class LambdaExecutionResponse : IExecutionResponse {
     public IExecutionResponse Clone(IHeaderCollection? headerCollection) {
         return new LambdaExecutionResponse(Body, headerCollection ?? Headers) {
             ResponseValue = ResponseValue,
-            TemplateName = TemplateName,
             Status = Status,
             ShouldCompress = ShouldCompress,
             IsBinary = IsBinary,
@@ -36,7 +35,6 @@ public class LambdaExecutionResponse : IExecutionResponse {
 
     public object? ResponseValue { get; set; }
 
-    public string? TemplateName { get; set; }
 
     public int? Status { get; set; }
 

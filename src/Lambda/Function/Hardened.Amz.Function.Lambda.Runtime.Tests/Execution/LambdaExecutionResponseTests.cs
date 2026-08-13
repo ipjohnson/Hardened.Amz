@@ -65,7 +65,6 @@ public class LambdaExecutionResponseTests {
         response.IsBinary = true;
         response.ShouldCompress = true;
         response.ShouldSerialize = false;
-        response.TemplateName = "template";
 
         var clone = response.Clone(null);
 
@@ -74,7 +73,6 @@ public class LambdaExecutionResponseTests {
         Assert.True(clone.IsBinary);
         Assert.True(clone.ShouldCompress);
         Assert.False(clone.ShouldSerialize);
-        Assert.Equal("template", clone.TemplateName);
     }
 
     [Fact]

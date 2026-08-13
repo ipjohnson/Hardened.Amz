@@ -330,7 +330,6 @@ public class StreamingExecutionResponseTests {
         var body = new MemoryStream();
         var response = new StreamingExecutionResponse(body) {
             ResponseValue = "test-value",
-            TemplateName = "template",
             ShouldCompress = true,
             IsBinary = true,
             ShouldSerialize = false,
@@ -339,7 +338,6 @@ public class StreamingExecutionResponseTests {
         var clone = response.Clone(null);
 
         Assert.Equal("test-value", clone.ResponseValue);
-        Assert.Equal("template", clone.TemplateName);
         Assert.True(clone.ShouldCompress);
         Assert.True(clone.IsBinary);
         Assert.False(clone.ShouldSerialize);

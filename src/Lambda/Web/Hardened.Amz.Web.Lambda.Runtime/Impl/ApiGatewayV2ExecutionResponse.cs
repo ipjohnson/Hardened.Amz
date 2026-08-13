@@ -22,7 +22,6 @@ public class ApiGatewayV2ExecutionResponse : IExecutionResponse {
     public IExecutionResponse Clone(IHeaderCollection? headerCollection) {
         return new ApiGatewayV2ExecutionResponse(_proxyResponse) {
             ResponseValue = ResponseValue,
-            TemplateName = TemplateName,
             ShouldCompress = ShouldCompress,
             IsBinary = IsBinary,
             ShouldSerialize = ShouldSerialize,
@@ -39,7 +38,6 @@ public class ApiGatewayV2ExecutionResponse : IExecutionResponse {
 
     public object? ResponseValue { get; set; }
 
-    public string? TemplateName { get; set; }
 
     public int? Status {
         get => _proxyResponse.StatusCode;

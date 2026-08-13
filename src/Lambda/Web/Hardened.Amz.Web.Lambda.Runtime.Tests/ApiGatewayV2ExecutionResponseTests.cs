@@ -95,7 +95,6 @@ public class ApiGatewayV2ExecutionResponseTests {
     public void CloneCarriesTheFlagsAndValuesThePipelineSets() {
         var response = Create();
         response.ResponseValue = "value";
-        response.TemplateName = "template";
         response.ShouldCompress = true;
         response.IsBinary = true;
         response.ShouldSerialize = false;
@@ -103,7 +102,6 @@ public class ApiGatewayV2ExecutionResponseTests {
         var clone = response.Clone(null);
 
         Assert.Equal("value", clone.ResponseValue);
-        Assert.Equal("template", clone.TemplateName);
         Assert.True(clone.ShouldCompress);
         Assert.True(clone.IsBinary);
         Assert.False(clone.ShouldSerialize);

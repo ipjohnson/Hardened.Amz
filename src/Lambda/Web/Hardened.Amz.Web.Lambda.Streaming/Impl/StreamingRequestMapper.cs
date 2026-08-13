@@ -166,7 +166,6 @@ public class StreamingExecutionResponse : IExecutionResponse {
     public IExecutionResponse Clone(IHeaderCollection? headerCollection) {
         return new StreamingExecutionResponse(Body!) {
             ResponseValue = ResponseValue,
-            TemplateName = TemplateName,
             ShouldCompress = ShouldCompress,
             IsBinary = IsBinary,
             ShouldSerialize = ShouldSerialize,
@@ -179,7 +178,6 @@ public class StreamingExecutionResponse : IExecutionResponse {
     }
 
     public object? ResponseValue { get; set; }
-    public string? TemplateName { get; set; }
     public int? Status { get; set; }
     public bool ShouldCompress { get; set; }
     public Stream Body { get; set; }
