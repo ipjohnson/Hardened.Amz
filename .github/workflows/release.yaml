@@ -26,6 +26,18 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+
+    # Job scope, not step scope. setup-dotnet writes a nuget.config whose credential is the literal
+    # string %NUGET_AUTH_TOKEN%, which NuGet expands when it restores rather than when the config is
+    # written - so scoped to the setup step it is already gone by the time restore runs, and the
+    # GitHub Packages source answers 401. A source that cannot be reached fails the whole restore
+    # rather than the packages it serves, so the first tag pushed would have failed before packing.
+    #
+    # Unlike Hardened.Framework, this feed cannot simply be dropped: Hardened.* packages are
+    # published only to GitHub Packages, and this repository consumes them.
+    env:
+      NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,8 +47,6 @@ jobs:
         with:
           dotnet-version: 8.0.x
           source-url: https://nuget.pkg.github.com/ipjohnson/index.json
-        env:
-          NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Resolve version
         id: version
