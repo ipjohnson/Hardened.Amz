@@ -76,13 +76,29 @@ public class StreamingRequestMapper : IStreamingRequestMapper {
 
 public class StreamingExecutionRequest : IExecutionRequest {
     private readonly APIGatewayHttpApiV2ProxyRequest _proxyRequest;
+    private readonly string _method;
     private IPathTokenCollection? _pathTokens;
     private IQueryStringCollection? _queryStringCollection;
     private IHeaderCollection? _headerCollection;
+    private IReadOnlyList<string>? _cookies;
 
-    public StreamingExecutionRequest(APIGatewayHttpApiV2ProxyRequest request) {
+    public StreamingExecutionRequest(APIGatewayHttpApiV2ProxyRequest request)
+        : this(request, null, null, null, null, null) {
+    }
+
+    private StreamingExecutionRequest(
+        APIGatewayHttpApiV2ProxyRequest request,
+        string? method,
+        string? path,
+        IHeaderCollection? headers,
+        IQueryStringCollection? queryString,
+        IReadOnlyList<string>? cookies) {
         _proxyRequest = request;
-        Path = StripStagePath(request.RawPath, request.RequestContext?.Stage);
+        _method = method ?? request.RequestContext.Http.Method;
+        Path = path ?? StripStagePath(request.RawPath, request.RequestContext?.Stage);
+        _headerCollection = headers;
+        _queryStringCollection = queryString;
+        _cookies = cookies;
     }
 
     private static string StripStagePath(string rawPath, string? stage) {
@@ -93,13 +109,24 @@ public class StreamingExecutionRequest : IExecutionRequest {
         return rawPath;
     }
 
+    /// <summary>
+    /// Every argument here is applied. All five used to be accepted and discarded — the same defect
+    /// the buffered transport carried, in the same shape. See
+    /// <c>ApiGatewayV2ExecutionRequest.Clone</c>.
+    /// </summary>
     public IExecutionRequest Clone(
         string? method = null,
         string? path = null,
         IDictionary<string, StringValues>? headers = null,
         IQueryStringCollection? queryString = null,
         IReadOnlyList<string>? cookies = null) {
-        return new StreamingExecutionRequest(_proxyRequest) {
+        return new StreamingExecutionRequest(
+            _proxyRequest,
+            method ?? _method,
+            path ?? Path,
+            CloneHeaders(headers),
+            queryString ?? _queryStringCollection,
+            cookies ?? _cookies) {
             // Cloned, not shared: a forked chain must be able to rebind without writing
             // through to the request it was forked from. See the conformance suite in
             // Hardened.Requests.Testing.
@@ -109,7 +136,18 @@ public class StreamingExecutionRequest : IExecutionRequest {
         };
     }
 
-    public string Method => _proxyRequest.RequestContext.Http.Method;
+    private IHeaderCollection? CloneHeaders(IDictionary<string, StringValues>? headers) {
+        if (headers != null) {
+            return new HeaderCollectionStringValues(headers);
+        }
+
+        return _headerCollection == null
+            ? null
+            : new HeaderCollectionStringValues(
+                new Dictionary<string, StringValues>(_headerCollection));
+    }
+
+    public string Method => _method;
     public string Path { get; }
 
     public string? ContentType {
@@ -148,7 +186,8 @@ public class StreamingExecutionRequest : IExecutionRequest {
         set => _pathTokens = value;
     }
 
-    public IReadOnlyList<string> Cookies => _proxyRequest.Cookies ?? Array.Empty<string>();
+    public IReadOnlyList<string> Cookies =>
+        _cookies ??= _proxyRequest.Cookies ?? Array.Empty<string>();
 }
 
 public class StreamingExecutionResponse : IExecutionResponse {
