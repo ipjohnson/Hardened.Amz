@@ -17,12 +17,12 @@ public class DynamoDbExecutionFilter : BaseBatchExecutionFilter<DynamoDBEvent, D
     public DynamoDbExecutionFilter(
         IJsonSerializer jsonSerializer,
         IMemoryStreamPool memoryStreamPool, 
-        IBatchProcessorExceptionHandler bulkProcessorExceptionHandler,
+        IBatchProcessorExceptionHandler batchProcessorExceptionHandler,
         CurrentDdbRecordContext currentDdbRecordContext, 
         ILogger<DynamoDbExecutionFilter> logger) : base(
         jsonSerializer, 
         memoryStreamPool,
-        bulkProcessorExceptionHandler, 
+        batchProcessorExceptionHandler, 
         logger) {
         _currentDdbRecordContext = currentDdbRecordContext;
     }
