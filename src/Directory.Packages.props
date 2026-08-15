@@ -21,26 +21,42 @@
     </PropertyGroup>
 
     <!--
-      Hardened.* floats deliberately. build-package.yaml publishes a 1.0.0-preview{10000+run}
-      to GitHub Packages on every push to main, and this repository tracks that feed rather than
-      pinning to a build number that would need bumping by hand on every framework change.
+      Hardened.* floats deliberately. build-package.yaml publishes a {line}-preview{run padded to
+      six} to GitHub Packages on every push to main, and this repository tracks that feed rather
+      than pinning to a build number that would need bumping by hand on every framework change.
+
+      The prefix is NOT open-ended: it names the release line, so it has to be moved by hand when
+      a new line opens. It was left at 1.0.0-preview* through the 0.1.0, 0.2.0 and 0.3.0 lines,
+      and since nothing publishes 1.0.0-preview any more the float silently kept resolving to
+      1.0.0-preview10199 - a framework from before 0.1.0 opened. The build stayed green against
+      it, which is what made it invisible: a float that matches nothing new does not fail, it
+      just stops moving.
     -->
     <ItemGroup Label="Hardened.Framework">
-        <PackageVersion Include="Hardened.Commands" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.Console.SourceGenerator" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.Function.SourceGenerator" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.Library.SourceGenerator" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.Requests.Abstract" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.Requests.Runtime" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.Shared.Runtime" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.Shared.Testing" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.SourceGenerator" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.Web.Runtime" Version="1.0.0-preview*" />
-        <PackageVersion Include="Hardened.Web.SourceGenerator" Version="1.0.0-preview*" />
+        <PackageVersion Include="Hardened.Commands" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.Console.SourceGenerator" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.Function.SourceGenerator" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.Library.SourceGenerator" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.Requests.Abstract" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.Requests.Runtime" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.Shared.Runtime" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.Shared.Testing" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.SourceGenerator" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.Web.Runtime" Version="0.4.0-preview*" />
+        <PackageVersion Include="Hardened.Web.SourceGenerator" Version="0.4.0-preview*" />
     </ItemGroup>
 
     <ItemGroup Label="DependencyModules and code generation">
-        <PackageVersion Include="CSharpAuthor" Version="1.1.1006" />
+        <!--
+          Must be at least what Hardened.Framework builds its generators against, currently
+          1.1.1010. Hardened.SourceGenerator ships as source and is compiled into this
+          repository's assemblies, so its use of CSharpAuthor is compiled here too - and
+          PrivateAssets=all on the framework side means no dependency constraint arrives to say
+          so. At 1.1.1006 the framework's own LinkGenerator and TemplateBaseGenerator failed to
+          compile here for want of ComponentModifier.Sealed, TypeParameterDefinition and
+          ClassDefinition.AddGenericParameter.
+        -->
+        <PackageVersion Include="CSharpAuthor" Version="1.1.1010" />
         <PackageVersion Include="DependencyModules.Runtime" Version="1.0.0-rc9230" />
         <PackageVersion Include="DependencyModules.SourceGenerator" Version="1.0.0-rc9230" />
         <PackageVersion Include="DependencyModules.Testing" Version="1.0.0-rc9230" />

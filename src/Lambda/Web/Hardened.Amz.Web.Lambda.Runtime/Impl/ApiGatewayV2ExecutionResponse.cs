@@ -1,6 +1,7 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
 using Hardened.Requests.Abstract.Execution;
 using Hardened.Requests.Abstract.Headers;
+using Hardened.Requests.Abstract.Outputs;
 using Hardened.Requests.Runtime.Headers;
 using Microsoft.Extensions.Primitives;
 
@@ -23,7 +24,8 @@ public class ApiGatewayV2ExecutionResponse : IExecutionResponse {
     public IExecutionResponse Clone(IHeaderCollection? headerCollection) {
         return new ApiGatewayV2ExecutionResponse(_proxyResponse) {
             ResponseValue = ResponseValue,
-            TemplateName = TemplateName,
+            OutputFactory = OutputFactory,
+            Output = Output,
             ShouldCompress = ShouldCompress,
             IsBinary = IsBinary,
             ShouldSerialize = ShouldSerialize,
@@ -45,7 +47,22 @@ public class ApiGatewayV2ExecutionResponse : IExecutionResponse {
 
     public object? ResponseValue { get; set; }
 
-    public string? TemplateName { get; set; }
+    /// <summary>
+    /// Built from <see cref="OutputFactory"/> on first use and kept, because it is asked whether it
+    /// answers the request before it is asked to write.
+    /// </summary>
+    /// <remarks>
+    /// Replaces <c>TemplateName</c>, which named a view by string and is gone: a view is a type
+    /// now, and setting an output takes the response out of negotiation rather than feeding a
+    /// name-based lookup.
+    /// </remarks>
+    public IHardenedResponseOutput? Output { get; set; }
+
+    /// <summary>
+    /// Builds what writes this response, or null when it is serialized like any other. A factory
+    /// rather than an instance so nothing is allocated for a response that is never written.
+    /// </summary>
+    public Func<IExecutionContext, IHardenedResponseOutput>? OutputFactory { get; set; }
 
     /// <summary>
     /// Null while the status is still undecided; otherwise what will be sent.

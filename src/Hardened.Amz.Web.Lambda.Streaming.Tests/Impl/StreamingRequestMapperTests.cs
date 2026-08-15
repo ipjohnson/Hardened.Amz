@@ -3,6 +3,7 @@ using Amazon.Lambda.APIGatewayEvents;
 using Hardened.Amz.Web.Lambda.Streaming.Impl;
 using Hardened.Requests.Abstract.Execution;
 using Hardened.Requests.Abstract.Headers;
+using Hardened.Requests.Abstract.Outputs;
 using Hardened.Shared.Runtime.Metrics;
 using Microsoft.Extensions.Primitives;
 using NSubstitute;
@@ -385,9 +386,13 @@ public class StreamingExecutionResponseTests {
     [Fact]
     public void Clone_PreservesProperties() {
         var body = new MemoryStream();
+        var output = Substitute.For<IHardenedResponseOutput>();
+        Func<IExecutionContext, IHardenedResponseOutput> factory = _ => output;
+
         var response = new StreamingExecutionResponse(body) {
             ResponseValue = "test-value",
-            TemplateName = "template",
+            Output = output,
+            OutputFactory = factory,
             ShouldCompress = true,
             IsBinary = true,
             ShouldSerialize = false,
@@ -396,7 +401,8 @@ public class StreamingExecutionResponseTests {
         var clone = response.Clone(null);
 
         Assert.Equal("test-value", clone.ResponseValue);
-        Assert.Equal("template", clone.TemplateName);
+        Assert.Same(output, clone.Output);
+        Assert.Same(factory, clone.OutputFactory);
         Assert.True(clone.ShouldCompress);
         Assert.True(clone.IsBinary);
         Assert.False(clone.ShouldSerialize);
