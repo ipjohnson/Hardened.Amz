@@ -9,6 +9,7 @@ namespace Hardened.Amz.Web.Lambda.Runtime.Impl;
 public class ApiGatewayV2ExecutionResponse : IExecutionResponse {
     private readonly APIGatewayHttpApiV2ProxyResponse _proxyResponse;
     private HeaderCollectionStringValues? _headerCollection;
+    private int? _status;
 
     public ApiGatewayV2ExecutionResponse(APIGatewayHttpApiV2ProxyResponse response) {
         _proxyResponse = response;
@@ -29,6 +30,11 @@ public class ApiGatewayV2ExecutionResponse : IExecutionResponse {
             // Carried, as LambdaExecutionResponse.Clone does. A fork whose Body did not come across
             // would write into a buffer nobody reads, and the bytes would vanish silently.
             Body = Body,
+            // Copied rather than shared, matching LambdaExecutionResponse and the framework's
+            // FeatureExecutionResponse: a clone starts where the original stands and diverges from
+            // there. It used to be shared, but only because the getter read straight off the proxy
+            // response — the accident that cost this transport its 404s.
+            Status = Status,
         };
     }
 
@@ -41,9 +47,28 @@ public class ApiGatewayV2ExecutionResponse : IExecutionResponse {
 
     public string? TemplateName { get; set; }
 
+    /// <summary>
+    /// Null while the status is still undecided; otherwise what will be sent.
+    ///
+    /// Reading it back off the proxy response looks equivalent and is not.
+    /// <see cref="APIGatewayHttpApiV2ProxyResponse.StatusCode"/> is a non-nullable <c>int</c>
+    /// starting at 0, so widening it to <c>int?</c> can never produce null — and
+    /// <c>ResourceNotFoundHandler</c> supplies a 404 only when it finds the status still unset.
+    /// It therefore never fired on this transport: an unmatched route left the status at 0, which
+    /// <see cref="ApiGatewayEventProcessor"/> normalises to 200, so every path the routing table
+    /// did not match came back as an empty 200.
+    ///
+    /// The streaming transport, which backs the status with its own field, has always returned
+    /// 404 here. The two hosts disagreed on the same application until this was fixed on
+    /// 2026-08-15; <c>FeatureExecutionResponse</c> and <c>AspNetExecutionContext</c> in the
+    /// framework carry the same field for the same reason.
+    /// </summary>
     public int? Status {
-        get => _proxyResponse.StatusCode;
-        set => _proxyResponse.StatusCode = value.GetValueOrDefault(200);
+        get => _status;
+        set {
+            _status = value;
+            _proxyResponse.StatusCode = value.GetValueOrDefault(200);
+        }
     }
 
     public bool ShouldCompress { get; set; }

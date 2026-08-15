@@ -17,6 +17,13 @@
         <PackageReference Include="DependencyModules.Runtime" Version="1.0.0-rc9230" />
         <PackageReference Include="DependencyModules.SourceGenerator" Version="1.0.0-rc9230" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
         <PackageReference Include="Hardened.Requests.Abstract" Version="1.0.0-preview*" />
+        <!--
+          The host resolves IWebExecutionHandlerService in the constructor the web generator emits,
+          so the web pipeline is a hard dependency, not an optional one. It was absent until
+          2026-08-15, which is why LambdaWebModule could not import [HardenedWebModule] and every
+          application built on this package threw at construction.
+        -->
+        <PackageReference Include="Hardened.Web.Runtime" Version="1.0.0-preview*" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
         <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />

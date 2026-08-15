@@ -46,34 +46,54 @@ public class ApiGatewayV2ExecutionResponseTests {
         Assert.True(response.ResponseStarted);
     }
 
+    /// <summary>
+    /// The case this transport got wrong until 2026-08-15, and the reason it returned an empty 200
+    /// for every unmatched route: <c>ResourceNotFoundHandler</c> supplies a 404 only when it finds
+    /// the status still unset, and a getter reading straight off the proxy response can never
+    /// report that — <c>StatusCode</c> is a non-nullable <c>int</c> starting at 0.
+    /// </summary>
     [Fact]
-    public void TheStatusIsReadFromTheProxyResponse() {
+    public void TheStatusStartsUnsetSoTheNotFoundHandlerCanSeeIt() {
+        Assert.Null(Create(new APIGatewayHttpApiV2ProxyResponse()).Status);
+    }
+
+    /// <summary>
+    /// A status already on the proxy response is not the pipeline's doing, and reporting it would
+    /// put the transport back where it started.
+    /// </summary>
+    [Fact]
+    public void TheStatusStaysUnsetEvenWhenTheProxyResponseCarriesOne() {
         var proxyResponse = new APIGatewayHttpApiV2ProxyResponse { StatusCode = 404 };
 
-        Assert.Equal(404, Create(proxyResponse).Status);
+        Assert.Null(Create(proxyResponse).Status);
     }
 
     [Fact]
     public void SettingTheStatusWritesItToTheProxyResponse() {
         var proxyResponse = new APIGatewayHttpApiV2ProxyResponse();
+        var response = Create(proxyResponse);
 
-        Create(proxyResponse).Status = 503;
+        response.Status = 503;
 
         Assert.Equal(503, proxyResponse.StatusCode);
+        Assert.Equal(503, response.Status);
     }
 
     /// <summary>
     /// <c>Status</c> is nullable on the interface and an <c>int</c> on the proxy response, so a
-    /// null has to become something. 200 is the only choice that does not surface to the caller as
-    /// a gateway error.
+    /// null has to become something on the wire. 200 is the only choice that does not surface to
+    /// the caller as a gateway error.
     /// </summary>
     [Fact]
-    public void ClearingTheStatusFallsBackTo200() {
+    public void ClearingTheStatusFallsBackTo200OnTheWireAndReadsBackAsUnset() {
         var proxyResponse = new APIGatewayHttpApiV2ProxyResponse { StatusCode = 404 };
+        var response = Create(proxyResponse);
+        response.Status = 500;
 
-        Create(proxyResponse).Status = null;
+        response.Status = null;
 
         Assert.Equal(200, proxyResponse.StatusCode);
+        Assert.Null(response.Status);
     }
 
     [Fact]
@@ -123,18 +143,31 @@ public class ApiGatewayV2ExecutionResponseTests {
     }
 
     /// <summary>
-    /// Status lives on the shared proxy response, so a fork that sets it is setting it for the
-    /// invocation — which is what makes a retry filter's replacement status take effect.
+    /// A clone starts where the original stands, as <c>LambdaExecutionResponse</c> and the
+    /// framework's <c>FeatureExecutionResponse</c> both do.
     /// </summary>
     [Fact]
-    public void CloneSharesTheStatusWithTheResponseItCameFrom() {
-        var proxyResponse = new APIGatewayHttpApiV2ProxyResponse();
-        var response = Create(proxyResponse);
+    public void CloneStartsFromTheStatusTheOriginalHad() {
+        var response = Create();
+        response.Status = 201;
+
+        Assert.Equal(201, response.Clone(null).Status);
+    }
+
+    /// <summary>
+    /// And diverges from there. This used to be shared, but only as a side effect of the getter
+    /// reading off the proxy response — the same accident that cost the transport its 404s. The
+    /// wire value still moves, because the proxy response is shared; what a fork must not do is
+    /// silently rewrite what the original reports about itself.
+    /// </summary>
+    [Fact]
+    public void CloneStatusDoesNotWriteBackToTheResponseItCameFrom() {
+        var response = Create();
+        response.Status = 200;
 
         response.Clone(null).Status = 409;
 
-        Assert.Equal(409, response.Status);
-        Assert.Equal(409, proxyResponse.StatusCode);
+        Assert.Equal(200, response.Status);
     }
 }
 
