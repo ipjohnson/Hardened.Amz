@@ -24,7 +24,10 @@ jobs:
           NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - run: dotnet restore
-      - run: dotnet build --configuration Release --no-restore
+
+      # ContinuousIntegrationBuild turns warnings into errors (see src/Directory.Build.props).
+      # Local builds do not set it, so an in-progress edit does not block someone's inner loop.
+      - run: dotnet build --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
 
       - name: Test with coverage
         run: |
