@@ -45,13 +45,15 @@ public class StreamingFunctionLambdaSourceGenerator : IIncrementalGenerator {
     /// True when the class itself carries the streaming module attribute.
     /// </summary>
     /// <remarks>
-    /// Its own <c>AttributeLists</c> rather than <c>IsAttributed</c>, which searches the whole class
-    /// subtree - so an attribute on a member or a nested type selected the enclosing application.
-    /// The web selector documents the same reasoning at length.
+    /// A class declaration's attribute lists are its direct children, so <c>ChildNodes()</c> reads
+    /// exactly what is written on the class - unlike <c>IsAttributed</c>, which searches the whole
+    /// subtree and let an attribute on a member or a nested type select the enclosing application.
+    /// The web selector documents the same reasoning, and why this takes a <c>SyntaxNode</c>
+    /// without testing its type, at length.
     /// </remarks>
     internal static bool DeclaresStreaming(SyntaxNode node) =>
-        node is ClassDeclarationSyntax classDeclaration &&
-        classDeclaration.AttributeLists
+        node.ChildNodes()
+            .OfType<AttributeListSyntax>()
             .SelectMany(list => list.Attributes)
             .Any(attribute => {
                 var name = attribute.Name.ToString();

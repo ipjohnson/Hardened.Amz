@@ -37,11 +37,18 @@ public class StreamingWebLambdaSourceGenerator : IIncrementalGenerator {
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Its own <c>AttributeLists</c> rather than <c>IsAttributed</c>, which searches
+    /// <c>ChildNodes()</c> rather than <c>IsAttributed</c>, which searches
     /// <c>DescendantNodes()</c> - the whole class subtree, members and nested types included. A
     /// <c>[StreamingLambdaWebModule]</c> on a nested class used to switch the enclosing application
     /// to streaming and emit a second bootstrap for the nested one: two streaming hosts from an
-    /// attribute written somewhere else entirely.
+    /// attribute written somewhere else entirely. A class declaration's attribute lists are its
+    /// direct children, so this reads exactly what is written on the class.
+    /// </para>
+    /// <para>
+    /// It takes a <c>SyntaxNode</c> and asks for attribute lists rather than testing for a
+    /// <c>ClassDeclarationSyntax</c> first. Both callers filter through <c>isEntryPoint</c>, which
+    /// already requires one, so the type test could never fail - an unreachable branch that
+    /// existed only to be defensive about a case its callers make impossible.
     /// </para>
     /// <para>
     /// Still a name comparison and not a symbol - the buffered selector has to reach the opposite
@@ -49,8 +56,8 @@ public class StreamingWebLambdaSourceGenerator : IIncrementalGenerator {
     /// </para>
     /// </remarks>
     internal static bool DeclaresStreaming(SyntaxNode node) =>
-        node is ClassDeclarationSyntax classDeclaration &&
-        classDeclaration.AttributeLists
+        node.ChildNodes()
+            .OfType<AttributeListSyntax>()
             .SelectMany(list => list.Attributes)
             .Any(attribute => {
                 var name = attribute.Name.ToString();

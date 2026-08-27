@@ -36,6 +36,25 @@ public class StreamingWebGeneratorTests {
     }
 
     /// <summary>
+    /// The spellings C# allows for one attribute, all of which select streaming.
+    ///
+    /// <para>
+    /// The selector compares simple names in syntax and never resolves a symbol, so each of these
+    /// has to be handled by the comparison itself: the suffix C# lets you omit, and a qualified
+    /// name where only the last segment is the attribute. A selector that missed one would emit the
+    /// other transport for source that plainly asks for this one.
+    /// </para>
+    /// </summary>
+    [Theory]
+    [InlineData("StreamingLambdaWebModule")]
+    [InlineData("StreamingLambdaWebModuleAttribute")]
+    [InlineData("TestApp.StreamingLambdaWebModule")]
+    [InlineData("TestApp.StreamingLambdaWebModuleAttribute")]
+    public void EverySpellingOfTheModuleAttributeSelectsStreaming(string attribute) {
+        Assert.Contains("Application.StreamingApp.cs", Streaming(attribute).GeneratedSources.Keys);
+    }
+
+    /// <summary>
     /// <c>[StreamingLambdaWebApplication]</c> stopped selecting the streaming generator on
     /// 2026-08-27. It registers no services — an application selected by it got a streaming
     /// bootstrap over an empty container and threw on construction — and it is
