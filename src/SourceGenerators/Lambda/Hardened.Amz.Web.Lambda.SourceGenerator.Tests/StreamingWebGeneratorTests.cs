@@ -26,14 +26,37 @@ public class StreamingWebGeneratorTests {
             WebGeneratorHarness.StreamingAttributes);
 
     /// <summary>
-    /// The two attribute names the streaming selector accepts. Both are matched by simple name, so a
-    /// consumer's own attribute of the same name selects the streaming generator too.
+    /// The one attribute name the streaming selector accepts. Matched by simple name, so a
+    /// consumer's own attribute of that name selects the streaming generator too.
     /// </summary>
-    [Theory]
-    [InlineData("StreamingLambdaWebApplication")]
-    [InlineData("StreamingLambdaWebModule")]
-    public void EitherAttributeTheStreamingSelectorAcceptsProducesAStreamingApplication(string attribute) {
-        Assert.Contains("Application.StreamingApp.cs", Streaming(attribute).GeneratedSources.Keys);
+    [Fact]
+    public void TheStreamingModuleAttributeProducesAStreamingApplication() {
+        Assert.Contains(
+            "Application.StreamingApp.cs", Streaming("StreamingLambdaWebModule").GeneratedSources.Keys);
+    }
+
+    /// <summary>
+    /// <c>[StreamingLambdaWebApplication]</c> stopped selecting the streaming generator on
+    /// 2026-08-27. It registers no services — an application selected by it got a streaming
+    /// bootstrap over an empty container and threw on construction — and it is
+    /// <c>[Obsolete(error: true)]</c> in the runtime now, so no source carrying it compiles at all.
+    ///
+    /// <para>
+    /// Asserted here because the failure to avoid is the quiet one: the name must not keep
+    /// selecting streaming, and an entry point that declares no streaming module must get the API
+    /// Gateway application rather than nothing.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void TheRetiredApplicationAttributeDoesNotProduceAStreamingApplication() {
+        var result = WebGeneratorHarness.RunBoth(
+            WebGeneratorHarness.Application(attributes: "[StreamingLambdaWebApplication]"),
+            WebGeneratorHarness.StreamingAttributes);
+
+        result.AssertNoErrors();
+
+        Assert.DoesNotContain("Application.StreamingApp.cs", result.GeneratedSources.Keys);
+        Assert.Contains("Application.App.cs", result.GeneratedSources.Keys);
     }
 
     /// <summary>
@@ -43,7 +66,7 @@ public class StreamingWebGeneratorTests {
     /// </summary>
     [Fact]
     public void TheStreamingApplicationHostsItselfThroughAGeneratedMain() {
-        var application = Streaming("StreamingLambdaWebApplication").SourceContaining("StreamingApp");
+        var application = Streaming("StreamingLambdaWebModule").SourceContaining("StreamingApp");
 
         Assert.Contains(
             "public static async global::System.Threading.Tasks.Task Main(string[] args)", application);
@@ -61,7 +84,7 @@ public class StreamingWebGeneratorTests {
     /// </summary>
     [Fact]
     public void TheStreamingApplicationStillWiresTheWebHandlerIntoTheMiddleware() {
-        var application = Streaming("StreamingLambdaWebApplication").SourceContaining("StreamingApp");
+        var application = Streaming("StreamingLambdaWebModule").SourceContaining("StreamingApp");
 
         WebGeneratorHarness.AssertEmits(application,
             "var handler = RootServiceProvider.GetRequiredService<" +
@@ -76,7 +99,7 @@ public class StreamingWebGeneratorTests {
     /// </summary>
     [Fact]
     public void TheStreamingApplicationHasNoApiGatewayInvokePath() {
-        var application = Streaming("StreamingLambdaWebApplication").SourceContaining("StreamingApp");
+        var application = Streaming("StreamingLambdaWebModule").SourceContaining("StreamingApp");
 
         Assert.DoesNotContain("IApiGatewayEventProcessor", application);
         Assert.DoesNotContain("APIGatewayHttpApiV2ProxyRequest", application);
@@ -84,18 +107,20 @@ public class StreamingWebGeneratorTests {
     }
 
     /// <summary>
-    /// The streaming selector does not require <c>[HardenedModule]</c> — the attribute alone claims
-    /// the entry point.
+    /// The streaming selector requires <c>[HardenedModule]</c>, as the API Gateway one always has.
+    /// Changed 2026-08-27; it previously treated the streaming attribute alone as claiming an entry
+    /// point, so a class that was not an application had a <c>Main</c> and a Lambda poll loop
+    /// generated onto it.
     /// </summary>
     [Fact]
-    public void TheStreamingAttributeAloneIsEnoughToClaimAnEntryPoint() {
+    public void AStreamingModuleOnANonEntryPointDoesNotProduceAnApplication() {
         var result = WebGeneratorHarness.Generate(
             new StreamingWebLambdaSourceGenerator(),
-            WebGeneratorHarness.Application(attributes: "[StreamingLambdaWebApplication]")
+            WebGeneratorHarness.Application(attributes: "[StreamingLambdaWebModule]")
                 .Replace("[HardenedModule]", ""),
             WebGeneratorHarness.StreamingAttributes);
 
-        Assert.Contains("Application.StreamingApp.cs", result.GeneratedSources.Keys);
+        Assert.DoesNotContain("Application.StreamingApp.cs", result.GeneratedSources.Keys);
     }
 
     /// <summary>
@@ -105,7 +130,7 @@ public class StreamingWebGeneratorTests {
     [Fact]
     public void AStreamingEntryPointIsNotAlsoGivenAnApiGatewayApplication() {
         var result = WebGeneratorHarness.RunBoth(
-            WebGeneratorHarness.Application(attributes: "[StreamingLambdaWebApplication]"),
+            WebGeneratorHarness.Application(attributes: "[StreamingLambdaWebModule]"),
             WebGeneratorHarness.StreamingAttributes);
 
         result.AssertNoErrors();
@@ -130,21 +155,22 @@ public class StreamingWebGeneratorTests {
     }
 
     /// <summary>
-    /// Recorded 2026-08-12. The selectors call <c>IsAttributed</c>, which searches
-    /// <c>DescendantNodes()</c> — every node inside the class, not only the attributes on it. A
-    /// streaming attribute written on a <em>member</em> therefore excludes the whole class from the
-    /// API Gateway generator, and the streaming one claims it.
+    /// Recorded 2026-08-12, fixed 2026-08-27. The selectors called <c>IsAttributed</c>, which
+    /// searches <c>DescendantNodes()</c> — every node inside the class, not only the attributes on
+    /// it. A streaming attribute written on a <em>member</em> therefore claimed the whole class for
+    /// the streaming generator and excluded it from the API Gateway one, giving the entry point a
+    /// <c>Main</c> and a poll loop the consumer never asked for.
     ///
     /// <para>
-    /// The observable consequence is asserted rather than assumed: this entry point gets a streaming
-    /// application, no API Gateway one, and a <c>Main</c> the consumer did not ask for.
+    /// The selectors now read the class's own <c>AttributeLists</c>, so what decides the transport
+    /// is what is written on the application.
     /// </para>
     /// </summary>
     [Fact]
-    public void AStreamingAttributeOnAMemberClaimsTheWholeClassForTheStreamingGenerator() {
+    public void AStreamingAttributeOnAMemberDoesNotClaimTheClassForTheStreamingGenerator() {
         var result = WebGeneratorHarness.RunBoth(
             WebGeneratorHarness.Application("""
-                    [StreamingLambdaWebApplication]
+                    [StreamingLambdaWebModule]
                     public void Unrelated() { }
                 """),
             WebGeneratorHarness.StreamingAttributes);
@@ -152,7 +178,28 @@ public class StreamingWebGeneratorTests {
         result.AssertNoErrors();
         WebGeneratorHarness.AssertDidNotCrash(result);
 
-        Assert.Contains("Application.StreamingApp.cs", result.GeneratedSources.Keys);
-        Assert.DoesNotContain("Application.App.cs", result.GeneratedSources.Keys);
+        Assert.Contains("Application.App.cs", result.GeneratedSources.Keys);
+        Assert.DoesNotContain("Application.StreamingApp.cs", result.GeneratedSources.Keys);
+    }
+
+    /// <summary>
+    /// The nested-type half of the same defect: an attribute on a nested class used to select the
+    /// enclosing application <em>and</em> generate a second streaming host for the nested type.
+    /// </summary>
+    [Fact]
+    public void AStreamingAttributeOnANestedTypeDoesNotClaimTheEnclosingClass() {
+        var result = WebGeneratorHarness.RunBoth(
+            WebGeneratorHarness.Application("""
+                    [StreamingLambdaWebModule]
+                    public partial class Inner { }
+                """),
+            WebGeneratorHarness.StreamingAttributes);
+
+        result.AssertNoErrors();
+        WebGeneratorHarness.AssertDidNotCrash(result);
+
+        Assert.Contains("Application.App.cs", result.GeneratedSources.Keys);
+        Assert.DoesNotContain("Application.StreamingApp.cs", result.GeneratedSources.Keys);
+        Assert.DoesNotContain("Inner.StreamingApp.cs", result.GeneratedSources.Keys);
     }
 }
