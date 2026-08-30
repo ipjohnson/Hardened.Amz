@@ -1,9 +1,9 @@
 # <picture><source media="(prefers-color-scheme: dark)" srcset="assets/hardened-mark-dark.svg"><img src="assets/hardened-mark.svg" alt="" width="34"></picture> Hardened.Amz
 
-Runs [Hardened](https://ipjohnson.github.io/Hardened.Docs) applications on AWS Lambda. The
-handlers, parameter binding, configuration and tests are the core framework's; this repository
-supplies what runs underneath — the Lambda runtimes, response streaming, the test harnesses, a
-DynamoDB client and CDK constructs. An application that never touches AWS never carries any of it.
+Runs [Hardened](https://ipjohnson.github.io/Hardened.Docs) applications on AWS Lambda. The handlers,
+parameter binding, configuration and tests are the core framework's. This repository supplies what
+runs underneath: the Lambda runtimes, response streaming, the test harnesses, a DynamoDB client and
+CDK constructs.
 
 AWS documentation: **[ipjohnson.github.io/Hardened.Docs/aws](https://ipjohnson.github.io/Hardened.Docs/aws/)**
 
@@ -18,8 +18,8 @@ dotnet new hardened-web -n Orders --host aws-lambda      # web API behind API Ga
 dotnet new hardened-function -n OrderQueue --trigger sqs # SQS batch processor
 ```
 
-A Lambda application is an ordinary Hardened application with a runtime module on it — and that is
-all that changes, so the same handlers run on Kestrel locally and API Gateway deployed:
+A Lambda application is an ordinary Hardened application with a runtime module on it. That is all
+that changes, so the same handlers run on Kestrel locally and API Gateway deployed:
 
 ```csharp
 [HardenedModule]
@@ -32,10 +32,10 @@ public class ProductController {
 }
 ```
 
-The runtime module is not optional: an application without one compiles, then throws
+The runtime module is not optional. An application without one compiles, then throws
 `'Application' is missing [LambdaFunctionModule]` the moment it is constructed.
 [Lambda application types](docs/application-types.md) covers the project shape, handler and test
-setup for each transport, and what the construction-time failures mean.
+setup for each transport.
 
 ## Pick your trigger
 
@@ -43,21 +43,24 @@ setup for each transport, and what the construction-time failures mean.
 |---|---|---|
 | [HTTP behind API Gateway](https://ipjohnson.github.io/Hardened.Docs/aws/lambda-web) | `[LambdaWebModule]` | `Hardened.Amz.Web.Lambda.Runtime` |
 | [Direct invocation](https://ipjohnson.github.io/Hardened.Docs/aws/lambda-function) | `[LambdaFunctionModule]` | `Hardened.Amz.Function.Lambda.Runtime` |
-| [SQS batches](https://ipjohnson.github.io/Hardened.Docs/aws/sqs) | `[SqsLambda]` | `Hardened.Amz.Function.Sqs.Runtime` |
-| [DynamoDB Streams](https://ipjohnson.github.io/Hardened.Docs/aws/ddb-streams) | `[DynamoStreamLambda]` | `Hardened.Amz.Function.DDB.Runtime` |
+| [SQS batches](https://ipjohnson.github.io/Hardened.Docs/aws/sqs) | `[LambdaFunctionModule]` + `[SqsLambda]` | `Hardened.Amz.Function.Sqs.Runtime` |
+| [DynamoDB Streams](https://ipjohnson.github.io/Hardened.Docs/aws/ddb-streams) | `[LambdaFunctionModule]` + `[DynamoStreamLambda]` | `Hardened.Amz.Function.DDB.Runtime` |
 | Streaming web responses | `[StreamingLambdaWebModule]` | `Hardened.Amz.Web.Lambda.Streaming` |
 | Streaming function responses | `[StreamingLambdaFunctionModule]` | `Hardened.Amz.Function.Lambda.Streaming` |
 
-The SQS runtime deserialises each message body into your handler's parameter type and reports
-partial batch failures back to SQS, so a throwing handler fails one message rather than the batch.
+SQS and DynamoDB Streams take a second attribute because they are event sources layered on the
+direct-invoke path. The SQS runtime deserialises each message body into your handler's parameter
+type and reports partial batch failures, so a throwing handler fails one message rather than the
+batch.
+
 The streaming modules drive the Lambda Runtime API directly and start writing the response as it is
-produced; the function must be deployed with the `RESPONSE_STREAM` invoke mode, which
+produced. The function must be deployed with the `RESPONSE_STREAM` invoke mode, which
 `Hardened.Amz.Cdk` does not configure for you today.
 
 ## Testing without AWS
 
-Each runtime has a matching harness that drives the real pipeline in-process — no deployed
-function, no mocked SDK types:
+Each runtime has a matching harness that drives the real pipeline in-process. No deployed function,
+and no mocked SDK types:
 
 - `LambdaTestApp` (`Hardened.Amz.Function.Lambda.Testing`) invokes function handlers.
 - `TestSqsApp` (`Hardened.Amz.Function.Sqs.Testing`) delivers batches and asserts partial failures.
@@ -89,8 +92,8 @@ dotnet test  Hardened.Amz.sln
 
 `src/Directory.Build.targets` prefers a sibling `../Hardened.Framework` checkout over the pinned
 packages when one exists, so the two repositories can be edited together. A checkout at an
-incompatible commit fails the build with errors in *the other repository's* files; force either
-side explicitly:
+incompatible commit fails the build with errors in *the other repository's* files. Force either side
+explicitly:
 
 ```bash
 dotnet build Hardened.Amz.sln -p:UseLocalHardenedFramework=false   # pinned packages, as CI builds
