@@ -1,4 +1,6 @@
-# <picture><source media="(prefers-color-scheme: dark)" srcset="assets/hardened-mark-dark.svg"><img src="assets/hardened-mark.svg" alt="" width="34"></picture> Hardened.Amz
+![Hardened](https://raw.githubusercontent.com/ipjohnson/Hardened.Amz/main/assets/hardened-icon-128.png)
+
+# Hardened.Amz
 
 Runs [Hardened](https://ipjohnson.github.io/Hardened.Docs) applications on AWS Lambda. The handlers,
 parameter binding, configuration and tests are the core framework's. This repository supplies what
@@ -34,8 +36,8 @@ public class ProductController {
 
 The runtime module is not optional. An application without one compiles, then throws
 `'Application' is missing [LambdaFunctionModule]` the moment it is constructed.
-[Lambda application types](docs/application-types.md) covers the project shape, handler and test
-setup for each transport.
+[Lambda application types](https://github.com/ipjohnson/Hardened.Amz/blob/main/docs/application-types.md)
+covers the project shape, handler and test setup for each transport.
 
 ## Pick your trigger
 
@@ -69,7 +71,7 @@ and no mocked SDK types:
 - `Hardened.Amz.Web.Lambda.Harness` puts the API Gateway pipeline behind a local HTTP listener.
 
 See [testing AWS handlers](https://ipjohnson.github.io/Hardened.Docs/aws/testing) and
-[testing conventions](docs/testing-conventions.md).
+[testing conventions](https://github.com/ipjohnson/Hardened.Amz/blob/main/docs/testing-conventions.md).
 
 ## Clients and infrastructure
 
@@ -102,7 +104,7 @@ dotnet build Hardened.Amz.sln -p:UseLocalHardenedFramework=true    # sibling che
 
 CI adds `-p:ContinuousIntegrationBuild=true`, which turns warnings into errors — run a build with
 it set before opening a pull request. The DynamoDB client tests need a running Docker daemon, and
-fail rather than skip without one — see [testing conventions](docs/testing-conventions.md).
+fail rather than skip without one — see [testing conventions](https://github.com/ipjohnson/Hardened.Amz/blob/main/docs/testing-conventions.md).
 
 ## Related repositories
 
