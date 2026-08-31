@@ -1,6 +1,4 @@
-![Hardened](https://raw.githubusercontent.com/ipjohnson/Hardened.Amz/main/assets/hardened-icon-128.png)
-
-# Hardened.Amz
+# ![Hardened](https://raw.githubusercontent.com/ipjohnson/Hardened.Amz/main/assets/hardened-mark-32.png) Hardened.Amz
 
 Runs [Hardened](https://ipjohnson.github.io/Hardened.Docs) applications on AWS Lambda. The handlers,
 parameter binding, configuration and tests are the core framework's. This repository supplies what
@@ -16,21 +14,40 @@ Lambda projects directly:
 
 ```bash
 dotnet new install Hardened.Templates
-dotnet new hardened-web -n Orders --host aws-lambda      # web API behind API Gateway
-dotnet new hardened-function -n OrderQueue --trigger sqs # SQS batch processor
+dotnet new hardened-web -n Todos --host aws-lambda        # web API behind API Gateway
+dotnet new hardened-function -n OrderQueue --trigger sqs  # SQS batch processor
 ```
 
-A Lambda application is an ordinary Hardened application with a runtime module on it. That is all
-that changes, so the same handlers run on Kestrel locally and API Gateway deployed:
+The first generates the same todo API the Kestrel host does, and a harness that runs it locally
+over HTTP. A Lambda application is an ordinary Hardened application with a runtime module on it,
+and the module is the only line that differs from the Kestrel bootstrap:
 
 ```csharp
 [HardenedModule]
-[LambdaWebModule]
-public partial class Application { }
+[LambdaWebModule]         // [KestrelRuntime] in the Kestrel host
+[TodosLibrary]
+public partial class Application;
+```
 
-public class ProductController {
-    [Get("/api/products/{id}")]
-    public Product GetProduct(string id) => new() { Id = id, Name = "Widget" };
+No handler, service or test in the library project knows which of the two it is running under.
+That is the whole migration.
+
+The function template is a different shape: a handler marked `[HardenedFunction]` rather than a
+route, invoked with the message body bound to its parameter.
+
+```csharp
+[HardenedModule]
+[LambdaFunctionModule]
+[SqsLambda]
+public partial class Application;
+
+public class OrderHandler(OrderLog log) {
+    [HardenedFunction]
+    public Task Process(Order order) {
+        log.Record(order);
+
+        return Task.CompletedTask;
+    }
 }
 ```
 
