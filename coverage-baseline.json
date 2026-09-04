@@ -31,10 +31,6 @@
     "line": 97.7,
     "branch": 84.3
   },
-  "Hardened.Amz.Function.Lambda.Streaming": {
-    "line": 31.7,
-    "branch": 5.5
-  },
   "Hardened.Amz.Function.Lambda.Testing": {
     "line": 71.4,
     "branch": 75.0
@@ -70,10 +66,6 @@
   "Hardened.Amz.Web.Lambda.SourceGenerator": {
     "line": 97.7,
     "branch": 83.3
-  },
-  "Hardened.Amz.Web.Lambda.Streaming": {
-    "line": 74.4,
-    "branch": 61.5
   },
   "SqsTest": {
     "line": 80.0,
